@@ -1,0 +1,8 @@
+
+flow sum(x, y){ return x + y; }
+
+flow linear (x, y) [w, b] 
+{
+    return (x.T) + y;
+}
+
