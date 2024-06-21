@@ -1,0 +1,33 @@
+# pyproject.toml
+
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "flow-kit"
+version = "0.0.0"
+description = "CLI toolkit for Flow language, and integration with python."
+readme = "README.md"
+authors = [{ name = "StealthyPanda", email = "shaikm259@gmail.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["flow", "ML", "DL"]
+dependencies = [
+    "codexregius",
+    "argparse",
+    'ply', 'dulwich'
+]
+requires-python = ">=3.10"
+
+
+# [project.urls]
+# Homepage = "github url"
+
+[project.scripts]
+flow = "cli.main:main"

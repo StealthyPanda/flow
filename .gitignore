@@ -7,3 +7,9 @@ try2
 *tab.py
 
 run.py
+
+test.py
+
+*.egg-info/
+
+*.fl

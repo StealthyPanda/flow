@@ -1,8 +1,8 @@
 import ply.yacc as yacc
 
 # Get the token map from the lexer
-from lexy import tokens
-from nodes import *
+from frontend.lexy import tokens
+from utils.nodes import *
 
 
 
@@ -20,12 +20,13 @@ def p_blocks(p):
 
 
 def p_build(p):
-    '''build : BUILD IDENTIFIER IDENTIFIER body
+    '''build : BUILD term term body
     '''
     p[0] = Build(
         name = p[3],
         flow = p[2],
         body = p[4],
+        line=p.lineno(1), charpos=p.lexpos(1)
     )
 
 
@@ -35,21 +36,21 @@ def p_flowdef(p):
         name = p[1].name,
         proto = p[1],
         body = p[2],
-
+        line=p.lineno(1), charpos=p.lexpos(1)
     )
 
 
 def p_flowproto(p):
-    '''flowproto : flowproto LBRACKET IDENTIFIER RBRACKET LPAREN IDENTIFIER RPAREN
-                 | flowproto LPAREN IDENTIFIER RPAREN LBRACKET IDENTIFIER RBRACKET
+    '''flowproto : flowproto LBRACKET term RBRACKET LPAREN term RPAREN
+                 | flowproto LPAREN term RPAREN LBRACKET term RBRACKET
                  
-                 | flowproto LPAREN IDENTIFIER RPAREN stuple
-                 | flowproto stuple LPAREN IDENTIFIER RPAREN
-                 | flowproto LBRACKET IDENTIFIER RBRACKET rtuple
-                 | flowproto rtuple LBRACKET IDENTIFIER RBRACKET
+                 | flowproto LPAREN term RPAREN stuple
+                 | flowproto stuple LPAREN term RPAREN
+                 | flowproto LBRACKET term RBRACKET rtuple
+                 | flowproto rtuple LBRACKET term RBRACKET
                  
-                 | flowproto LBRACKET IDENTIFIER RBRACKET
-                 | flowproto LPAREN IDENTIFIER RPAREN
+                 | flowproto LBRACKET term RBRACKET
+                 | flowproto LPAREN term RPAREN
                  
                  | flowproto stuple rtuple
                  | flowproto rtuple stuple
@@ -57,7 +58,7 @@ def p_flowproto(p):
                  | flowproto stuple
                  | flowproto rtuple
                  
-                 | FLOW IDENTIFIER
+                 | FLOW term
     '''
     if len(p) == 8:
         # print('single single')
@@ -66,16 +67,16 @@ def p_flowproto(p):
                 name = p[1].name, 
                 symbols = [p[6]],
                 args = [p[3]],
-                # line=p.lineno(0),
-                # charpos=p.lexpos(0)
+                line=p.lineno(1),
+                charpos=p.lexpos(1)
             )
         else:
             p[0] = FlowProto(
                 name = p[1].name, 
                 symbols = [p[3]],
                 args = [p[6]],
-                # line=p.lineno(0),
-                # charpos=p.lexpos(0)
+                line=p.lineno(1),
+                charpos=p.lexpos(1)
             )
     elif len(p) == 6:
         # print('single tuple')
@@ -84,32 +85,32 @@ def p_flowproto(p):
                 name = p[1].name, 
                 symbols = [p[3]],
                 args = p[5],
-                # line=p.lineno(0),
-                # charpos=p.lexpos(0)
+                line=p.lineno(1),
+                charpos=p.lexpos(1)
             )
         elif p[3] == '(':
             p[0] = FlowProto(
                 name = p[1].name, 
                 symbols = [p[4]],
                 args = p[2],
-                # line=p.lineno(0),
-                # charpos=p.lexpos(0)
+                line=p.lineno(1),
+                charpos=p.lexpos(1)
             )
         elif p[2] == '[':
             p[0] = FlowProto(
                 name = p[1].name, 
                 symbols = p[5],
                 args = [p[3]],
-                # line=p.lineno(0),
-                # charpos=p.lexpos(0)
+                line=p.lineno(1),
+                charpos=p.lexpos(1)
             )
         elif p[3] == '[':
             p[0] = FlowProto(
                 name = p[1].name, 
                 symbols = p[2],
                 args = [p[4]],
-                # line=p.lineno(0),
-                # charpos=p.lexpos(0)
+                line=p.lineno(1),
+                charpos=p.lexpos(1)
             )
     elif len(p) == 5:
         # print('single')
@@ -117,8 +118,8 @@ def p_flowproto(p):
             name = p[1].name,
             symbols = p[3] if p[2] == '(' else None,
             args = p[3] if p[2] == '[' else None,
-            # line=p.lineno(0),
-            # charpos=p.lexpos(0)
+            line=p.lineno(1),
+            charpos=p.lexpos(1)
         )
     elif len(p) == 4:
         # print('tuple tuple')
@@ -126,8 +127,8 @@ def p_flowproto(p):
             name = p[1].name, 
             symbols = p[2] if p[2].bracks == 'round' else p[3],
             args = p[3] if p[3].bracks == 'square' else p[2],
-            # line=p.lineno(0),
-            # charpos=p.lexpos(0)
+            line=p.lineno(1),
+            charpos=p.lexpos(1)
         )
     else:
         # print('tuple or none')
@@ -137,8 +138,8 @@ def p_flowproto(p):
                 name = p[1].name,
                 symbols = p[2] if p[2].bracks == 'round' else None,
                 args = p[2] if p[2].bracks == 'square' else None,
-                # line=p.lineno(0),
-                # charpos=p.lexpos(0)
+                line=p.lineno(1),
+                charpos=p.lexpos(1)
             )
 
 
@@ -170,15 +171,14 @@ def p_statement(p):
 
 
 def p_shape_spec(p):
-    '''shapespec : IDENTIFIER EQUALS GT tuple SEMICOLON
-                 | IDENTIFIER EQUALS GT tuple_s SEMICOLON
-                 | IDENTIFIER EQUALS GT stuple SEMICOLON
-                 | IDENTIFIER EQUALS GT rtuple SEMICOLON
-                 | IDENTIFIER EQUALS GT NUMBER SEMICOLON
-                 | IDENTIFIER EQUALS GT IDENTIFIER SEMICOLON
-                 | IDENTIFIER EQUALS GT body SEMICOLON
+    '''shapespec : term EQUALS GT tuple SEMICOLON
+                 | term EQUALS GT tuple_s SEMICOLON
+                 | term EQUALS GT stuple SEMICOLON
+                 | term EQUALS GT rtuple SEMICOLON
+                 | term EQUALS GT term SEMICOLON
+                 | term EQUALS GT body SEMICOLON
     '''
-    p[0] = ShapeSpec(var=p[1], shape=p[4],)
+    p[0] = ShapeSpec(var=p[1], shape=p[4], line=p[1].line, charpos=p[1].charpos)
 
 
 def p_retter(p):
@@ -187,10 +187,9 @@ def p_retter(p):
                | RETURN tuple_s SEMICOLON
                | RETURN stuple SEMICOLON
                | RETURN rtuple SEMICOLON
-               | RETURN IDENTIFIER SEMICOLON
-               | RETURN NUMBER SEMICOLON
+               | RETURN term SEMICOLON
     '''
-    p[0] = Return(value=p[2],)
+    p[0] = Return(value=p[2], line=p.lineno(1), charpos=p.lexpos(1))
 
 def p_asser(p):
     '''assstmt : asslhs expr SEMICOLON
@@ -198,10 +197,9 @@ def p_asser(p):
                | asslhs tuple_s SEMICOLON
                | asslhs stuple SEMICOLON
                | asslhs rtuple SEMICOLON
-               | asslhs IDENTIFIER SEMICOLON
-               | asslhs NUMBER SEMICOLON
+               | asslhs term SEMICOLON
     '''
-    p[0] = Assignment(left=p[1], right=p[2],)
+    p[0] = Assignment(left=p[1], right=p[2], line=p.lineno(1), charpos=p.lexpos(1))
     
 
 def p_ass_lhs(p):
@@ -210,30 +208,32 @@ def p_ass_lhs(p):
               | tuple_s EQUALS
               | stuple EQUALS
               | rtuple EQUALS
-              | IDENTIFIER EQUALS
+              | term EQUALS
     '''
     p[0] = p[1]
 
 
 def p_letter(p):
-    '''letstmt : LET IDENTIFIER IDENTIFIER SEMICOLON
-               | LET IDENTIFIER IDENTIFIER stuple SEMICOLON
+    '''letstmt : LET term term SEMICOLON
+               | LET term term stuple SEMICOLON
     '''
-    p[0] = Let(flow = p[2], idts=[p[3]], init=p[4] if p[4] != ';' else None,)
+    p[0] = Let(
+        flow = p[2], idts=[p[3]], init=p[4] if p[4] != ';' else None, line=p.lineno(1), charpos=p.lexpos(1)
+    )
 
 
 def p_rtuple(p):
     '''rtuple : LPAREN tuple RPAREN
               | LPAREN tuple_s RPAREN
     '''
-    p[0] = Tuple(vals=p[2], bracks='round')
+    p[0] = Tuple(vals=p[2], bracks='round', line=p.lineno(2), charpos=p.lexpos(2))
 
 
 def p_stuple(p):
     '''stuple : LBRACKET tuple RBRACKET
               | LBRACKET tuple_s RBRACKET
     '''
-    p[0] = Tuple(vals=p[2], bracks='square')
+    p[0] = Tuple(vals=p[2], bracks='square', line=p.lineno(2), charpos=p.lexpos(2))
 
 
 
@@ -241,8 +241,7 @@ def p_stuple(p):
 
 
 def p_tuple_cont(p):
-    '''tuple   : tuple_s IDENTIFIER
-               | tuple_s NUMBER
+    '''tuple   : tuple_s term
                | tuple_s expr
                | tuple_s slice_l
                | tuple_s slice_r
@@ -250,8 +249,7 @@ def p_tuple_cont(p):
                | tuple_s stuple
                | tuple_s rtuple
                
-               | tuple COMMA NUMBER
-               | tuple COMMA IDENTIFIER
+               | tuple COMMA term
                | tuple COMMA expr
                | tuple COMMA slice_l
                | tuple COMMA slice_r
@@ -267,8 +265,7 @@ def p_tuple_cont(p):
 
 
 def p_tuple_start(p):
-    '''tuple_s : NUMBER COMMA
-               | IDENTIFIER COMMA
+    '''tuple_s : term COMMA
                | expr COMMA
                | stuple COMMA
                | rtuple COMMA
@@ -282,31 +279,27 @@ def p_tuple_start(p):
 
 
 def p_call(p):
-    '''expr : IDENTIFIER LPAREN expr RPAREN
-            | IDENTIFIER LPAREN NUMBER RPAREN
-            | IDENTIFIER LPAREN IDENTIFIER RPAREN
-            | IDENTIFIER LPAREN RPAREN
+    '''expr : term LPAREN expr RPAREN
+            | term LPAREN term RPAREN
+            | term LPAREN RPAREN
             
-            | IDENTIFIER rtuple
+            | term rtuple
     '''
-    p[0] = Call(name=p[1], args=p[2].vals if type(p[2]) == Tuple else ([p[3]] if p[3] != ')' else None))
+    p[0] = Call(name=p[1], args=p[2].vals if type(p[2]) == Tuple else ([p[3]] if p[3] != ')' else None),
+                line=p[1].line, charpos=p[1].charpos)
 
 
 def p_slice_left(p):
-    '''slice_l : IDENTIFIER slice_e 
-               | NUMBER slice_e
-               | IDENTIFIER slice_r 
-               | NUMBER slice_r
+    '''slice_l : term slice_e 
+               | term slice_r
     '''
     s : Slice = p[2]
     s.left = p[1]
     p[0] = s
 
 def p_slice_right(p):
-    '''slice_r : slice_e IDENTIFIER 
-               | slice_e NUMBER
-               | slice_l IDENTIFIER 
-               | slice_l NUMBER
+    '''slice_r : slice_e term 
+               | slice_l term
     '''
     s : Slice = p[1]
     s.right = p[2]
@@ -316,15 +309,14 @@ def p_slice_right(p):
 def p_slice_empty(p):
     '''slice_e : COLON
     '''
-    p[0] = Slice(left=0, right=-1, step=1,)
+    p[0] = Slice(left=0, right=-1, step=1, line=p.lineno(0), charpos=p.lexpos(0))
 
 
 def p_slice(p):
     '''slice : LBRACKET slice_l RBRACKET
              | LBRACKET slice_r RBRACKET
              | LBRACKET slice_e RBRACKET
-             | LBRACKET IDENTIFIER RBRACKET
-             | LBRACKET NUMBER RBRACKET
+             | LBRACKET term RBRACKET
     '''
     p[0] = p[2]
 
@@ -333,24 +325,16 @@ def p_slice(p):
 
 
 def p_expr(p):
-    '''expr : NUMBER op NUMBER
-            | NUMBER op expr
-            | NUMBER op IDENTIFIER
-            
+    '''expr : term op term
+            | term op expr
             | expr op expr
-            | expr op NUMBER
-            | expr op IDENTIFIER
+            | expr op term
             
-            | IDENTIFIER op IDENTIFIER
-            | IDENTIFIER op NUMBER
-            | IDENTIFIER op expr
-            
-            | MINUS IDENTIFIER
-            | MINUS NUMBER
+            | MINUS term
             | MINUS expr
             
-            | IDENTIFIER stuple
-            | IDENTIFIER slice
+            | term stuple
+            | term slice
             | expr stuple
             | expr slice
             
@@ -358,13 +342,18 @@ def p_expr(p):
     '''
     if len(p) == 3:
         if p[1] == '-':
-            p[0] = Op(value='-', left=None, right=p[2], )
+            p[0] = Op(value='-', left=None, right=p[2], line=p.lineno(2), charpos=p.lexpos(2))
         else:
-            p[0] = Op(name='slice', value=None, left=p[1], right=p[2], )
+            p[0] = Op(name='slice', left=p[1], right=p[2], line=p.lineno(1), charpos=p.lexpos(1))
     elif p[1] == '(': p[0] = p[2]
-    else : p[0] = Op(value=p[2], left=p[1], right=p[3], )
+    else : p[0] = Op(value=p[2], left=p[1], right=p[3], line=p.lineno(1), charpos=p.lexpos(1))
 
 
+def p_term(p):
+    '''term : IDENTIFIER
+            | NUMBER
+    '''
+    p[0] = Term(line = p.lineno(1), charpos=p.lexpos(1), value=p[1])
 
 
 def p_ops(p):
@@ -382,7 +371,7 @@ def p_ops(p):
 
 
 def p_error(p):
-    if p: print(f"Syntax error at '{p.value}' on line number {p.lineno}")
+    if p: raise InvalidSyntax(f"Syntax error at '{p.value}' on line number {p.lineno}!", line = p.lineno)
     else : print('End of file (maybe?)')
 
 
