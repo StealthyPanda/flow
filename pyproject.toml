@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 
 [project]
-name = "flow-kit"
+name = "flow-toolkit"
 version = "0.0.0"
 description = "CLI toolkit for Flow language, and integration with python."
 readme = "README.md"
