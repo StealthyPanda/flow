@@ -15,7 +15,7 @@ pip install flow-toolkit
 Next, install a plugin for your intended output. For example:
 
 ```bash
-flow -i https://github.com/StealthyPanda/
+flow -i https://github.com/StealthyPanda/pytorch-backend.git
 ```
 
 
