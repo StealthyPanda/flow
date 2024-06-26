@@ -47,6 +47,9 @@ flow NeuralNetwork (x) {
 build NeuralNetwork simple {
     x => 784;
     output => 10;
+    l1 => {
+        output => 16;
+    };
 }
 ```
 
